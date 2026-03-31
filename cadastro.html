@@ -7,14 +7,22 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; padding: 50px; }
-        .container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
-        h2 { color: #333; text-align: center; }
+        /* Aumentei o max-width para a tabela ficar confortável */
+        .container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
+        h2, h3 { color: #333; text-align: center; }
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; color: #666; }
         input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
         button { width: 100%; padding: 10px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; margin-top: 10px; }
         button:hover { background-color: #218838; }
         #mensagem { margin-top: 15px; text-align: center; font-weight: bold; }
+
+        /* Estilos da Tabela */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #f8f9fa; color: #333; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        hr { margin: 30px 0; border: 0; border-top: 1px solid #eee; }
     </style>
 </head>
 <body>
@@ -36,20 +44,64 @@
         </div>
         <button type="submit">Finalizar Cadastro</button>
     </form>
+    
     <div id="mensagem"></div>
+
+    <hr>
+
+    <h3>Pacientes Cadastrados</h3>
+    <table id="tabelaPacientes">
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Celular</th>
+                <th>E-mail</th>
+            </tr>
+        </thead>
+        <tbody>
+            </tbody>
+    </table>
 </div>
 
 <script>
-    // IMPORTANTE: Use a URL completa https://...
     const supabaseUrl = 'https://lhihjyjyuphtfbsluqdr.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxoaWhqeWp5dXBodGZic2x1cWRyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDk3NTEzNCwiZXhwIjoyMDkwNTUxMTM0fQ.VcQOOSf5tb-hl6VomJWdHKfEHk5uezK9fypfzyF2iME';
 
-    // Jeito correto de iniciar no navegador
     const { createClient } = supabase;
     const _supabase = createClient(supabaseUrl, supabaseKey);
 
     const form = document.getElementById('formCadastro');
     const msg = document.getElementById('mensagem');
+    const tabelaBody = document.querySelector('#tabelaPacientes tbody');
+
+    // Função para buscar e listar os pacientes
+    async function listarPacientes() {
+        try {
+            const { data, error } = await _supabase
+                .from('pacientes')
+                .select('*')
+                .order('created_at', { ascending: false }); // Mostra os novos primeiro
+
+            if (error) throw error;
+
+            tabelaBody.innerHTML = ''; // Limpa a tabela antes de preencher
+
+            data.forEach(paciente => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${paciente.nome}</td>
+                    <td>${paciente.celular}</td>
+                    <td>${paciente.email}</td>
+                `;
+                tabelaBody.appendChild(tr);
+            });
+        } catch (err) {
+            console.error('Erro ao listar:', err.message);
+        }
+    }
+
+    // Carrega a lista ao abrir a página
+    listarPacientes();
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -70,6 +122,10 @@
             msg.style.color = "green";
             msg.innerText = "✅ Paciente cadastrado com sucesso!";
             form.reset();
+            
+            // Atualiza a tabela imediatamente após o cadastro
+            listarPacientes();
+            
         } catch (err) {
             console.error(err);
             msg.style.color = "red";
